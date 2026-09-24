@@ -67,6 +67,8 @@ jobs:
       - name: launch.py fails cleanly without a GPU
         working-directory: ${{ runner.temp }}\cv
         run: |
+          # PowerShell 5.1 turns redirected native stderr into error records. Stop would abort here.
+          $ErrorActionPreference = "Continue"
           $out = .venv\Scripts\python.exe scripts\launch.py 2>&1 | Out-String
           Write-Host $out
           if ($out -notmatch "nvidia-smi failed") { Write-Error "unexpected launch.py output"; exit 1 }
