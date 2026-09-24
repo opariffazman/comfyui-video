@@ -5,7 +5,8 @@
 #   ./scripts/setup.sh --no-r2v      # skip R2V weights (~43GB)
 #   ./scripts/setup.sh --skip-models # software only
 #
-# Needs: git, uv (https://docs.astral.sh/uv/), NVIDIA driver >= 580 (CUDA 13.0).
+# Needs: git, NVIDIA driver >= 580 (CUDA 13.0). Installs uv to ~/.local/bin when missing.
+# Python 3.12 comes from uv.
 set -euo pipefail
 R="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$R"
@@ -26,6 +27,12 @@ for a in "$@"; do
   esac
 done
 
+if ! command -v uv >/dev/null; then
+  echo "### Installing uv (official installer, to ~/.local/bin)"
+  command -v curl >/dev/null || { echo "Missing 'curl' to install uv. Install curl or uv and re-run." >&2; exit 1; }
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  export PATH="$HOME/.local/bin:$PATH"
+fi
 for cmd in git uv nvidia-smi; do
   command -v "$cmd" >/dev/null || { echo "Missing '$cmd'. Install it and re-run." >&2; exit 1; }
 done

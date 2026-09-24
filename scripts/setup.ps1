@@ -4,7 +4,8 @@
 #   .\scripts\setup.ps1 -NoR2V        # skip R2V weights (~43GB)
 #   .\scripts\setup.ps1 -SkipModels   # software only
 #
-# Needs: git, uv (winget install astral-sh.uv), NVIDIA driver >= 580 (CUDA 13.0).
+# Installs git and uv when missing (winget, or the official uv installer).
+# Python 3.12 comes from uv. You install only the NVIDIA driver >= 580 (CUDA 13.0).
 # If script execution is blocked:  Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 param([switch]$NoR2V, [switch]$SkipModels)
 $ErrorActionPreference = "Stop"
@@ -18,17 +19,43 @@ $Torch    = @("torch==2.13.0", "torchvision==0.28.0", "torchaudio==2.11.0")  # c
 $Sage     = "sageattention==1.0.6"
 $Triton   = "triton-windows>=3.7,<3.8"  # SageAttention is pure Triton; Linux gets triton with torch
 
+function Has($cmd) { [bool](Get-Command $cmd -ErrorAction SilentlyContinue) }
 function Need($cmd) {
-    if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) {
-        throw "Missing '$cmd'. Install it and re-run."
-    }
+    if (-not (Has $cmd)) { throw "Missing '$cmd'. Install it and re-run." }
 }
 function Run {
     & $args[0] $args[1..($args.Count - 1)]
     if ($LASTEXITCODE -ne 0) { throw "Command failed ($LASTEXITCODE): $($args -join ' ')" }
 }
+# Installers update PATH in the registry only. Reload it into this session.
+function Update-SessionPath {
+    $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
+                [Environment]::GetEnvironmentVariable("Path", "User") + ";" +
+                (Join-Path $HOME ".local\bin")
+}
+# Install a winget package when its command is missing. Returns $true when the command exists afterwards.
+function Install-WithWinget($cmd, $id) {
+    if (Has $cmd) { return $true }
+    if (-not (Has winget)) { return $false }
+    Write-Host "### Installing $id with winget"
+    winget install --id $id --exact --source winget --silent `
+        --accept-package-agreements --accept-source-agreements | Out-Host
+    Update-SessionPath
+    return (Has $cmd)
+}
 
-Need git; Need uv; Need nvidia-smi
+if (-not (Install-WithWinget git Git.Git)) {
+    throw "Missing 'git' and winget is unavailable. Install Git from https://git-scm.com/download/win and re-run."
+}
+if (-not (Install-WithWinget uv astral-sh.uv)) {
+    Write-Host "### Installing uv with the official installer"
+    Invoke-RestMethod https://astral.sh/uv/install.ps1 | Invoke-Expression
+    Update-SessionPath
+}
+Need uv
+if (-not (Has nvidia-smi)) {
+    throw "Missing 'nvidia-smi'. Install the NVIDIA driver (>= 580) and re-run."
+}
 $Driver = (nvidia-smi --query-gpu=driver_version --format=csv,noheader | Select-Object -First 1).Trim()
 if ([int]($Driver.Split(".")[0]) -lt 580) {
     throw "NVIDIA driver $Driver is too old. torch cu130 needs >= 580. Update the driver and re-run."

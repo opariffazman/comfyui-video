@@ -9,8 +9,15 @@ It generates video **with native stereo audio** in a single pass.
 Requirements on every machine:
 - NVIDIA GPU, Ampere (RTX 30xx) or newer
 - NVIDIA driver **>= 580** (torch cu130)
-- `git` and [`uv`](https://docs.astral.sh/uv/getting-started/installation/)
 - ~70GB free disk for `models/`, on NVMe for cards under 20GB
+
+Setup installs the rest:
+
+| Tool | Linux | Windows |
+|---|---|---|
+| `git` | you install it | winget (`Git.Git`) |
+| `uv` | official installer → `~/.local/bin` | winget, else official installer |
+| Python 3.12 | `uv` downloads it | `uv` downloads it |
 
 ### Linux
 
@@ -22,13 +29,25 @@ git clone git@github.com:opariffazman/comfyui-video.git && cd comfyui-video
 
 ### Windows 10/11 (PowerShell)
 
+On a fresh machine, paste this one line. It installs git, clones to `$HOME\comfyui-video`, and runs setup:
+
 ```powershell
-winget install Git.Git astral-sh.uv
-git clone https://github.com/opariffazman/comfyui-video.git; cd comfyui-video
-Set-ExecutionPolicy -Scope CurrentUser RemoteSigned   # once, if scripts are blocked
-.\scripts\setup.ps1             # add -NoR2V to skip 22GB of R2V weights
-.\scripts\start.ps1             # http://127.0.0.1:8188
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/opariffazman/comfyui-video/main/scripts/bootstrap.ps1))) -NoR2V
 ```
+
+- `-Dir D:\comfyui-video` picks the clone location. Use an NVMe drive.
+- Drop `-NoR2V` to also fetch the 22GB of R2V weights.
+- The Git installer shows one UAC prompt.
+
+Then start ComfyUI (http://127.0.0.1:8188):
+
+```powershell
+cd $HOME\comfyui-video
+powershell -ExecutionPolicy Bypass -File .\scripts\start.ps1
+```
+
+With the repo already cloned, run `.\scripts\setup.ps1` directly. It installs uv when missing.
+If scripts are blocked, run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once.
 
 The Windows scripts are unconfirmed on real hardware.
 The dependency set resolves for `win_amd64` (`torch 2.13.0+cu130`, `triton-windows 3.7.1`).
@@ -77,6 +96,7 @@ comfyui-video/
 ├── outputs/                generated videos (git-ignored)
 ├── extra_model_paths.yaml  points ComfyUI at models/ (path relative to the repo)
 └── scripts/
+    ├── bootstrap.ps1                Windows one-liner: git + clone + setup
     ├── setup.sh / setup.ps1         install everything
     ├── start.sh / start.ps1         launch
     ├── launch.py                    GPU detection + ComfyUI flags
