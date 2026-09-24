@@ -1,0 +1,14 @@
+# Models live OUTSIDE the ComfyUI checkout so that updating/reinstalling
+# ComfyUI never touches the weights. base_path is relative to this file,
+# so the repo works from any clone location on Linux and Windows.
+comfyui:
+    base_path: .
+    is_default: true
+    diffusion_models: models/diffusion_models
+    text_encoders: models/text_encoders
+    vae: models/vae
+    loras: models/loras
+    embeddings: models/embeddings
+    checkpoints: models/checkpoints
+    clip_vision: models/clip_vision
+    upscale_models: models/upscale_models

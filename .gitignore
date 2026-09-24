@@ -1,0 +1,19 @@
+# Large or machine-specific — recreated by scripts/setup.*
+.venv/
+comfy/
+models/
+user/
+
+# Generated / personal
+outputs/
+logs/
+inputs/*
+!inputs/.gitkeep
+/*.jpeg
+/*.jpg
+/*.png
+
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

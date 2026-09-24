@@ -1,0 +1,44 @@
+# Two-cut "reveal" template (comic-overlay hero shot -> whip pan -> creature roar)
+#
+# How to use:
+#   1. Copy the PROMPT block below into your tool/CLI.
+#   2. Fill every [BRACKETED] placeholder.
+#   3. Keep <Picture N> / <Audio N> tokens as-is — they refer to attachments
+#      in the order you upload them (Picture 1 = 1st image, Picture 2 = 2nd,
+#      Audio 1 = 1st audio file). Renumber only if you attach a different count.
+#   4. Delete this comment block before submitting the prompt.
+#
+# ---------------------------------------------------------------------------
+
+[STYLE_LINE — overall visual style, linework, palette, setting]
+Use <Picture [REF_IMG_A]> and <Picture [REF_IMG_B]> as reference frames and <Audio [REF_AUDIO]> exactly as it is.
+
+CUT 1: [SHOT_TYPE_1] of [CHARACTER_DESC] — [CHARACTER_DETAIL_1], [CHARACTER_DETAIL_2], [CHARACTER_POSE/EXPRESSION] as [they/he/she] look[s] [DIRECTION] into the camera. [CAMERA_MOVE_1] as [PRONOUN] delivers [their] line — as [PRONOUN] speaks, [OVERLAY_STYLE] text word by word in sync with [their] voice: "[WORD_1]" - "[WORD_2]" — "[WORD_3]" — "[WORD_4]" — [OVERLAY_TYPOGRAPHY_DETAIL], until the [N] words hang stacked in the air [OVERLAY_POSITION].
+
+TRANSITION: [TRANSITION_DESC] —
+
+CUT 2: [SHOT_TYPE_2] on [SUBJECT_2_DESC] as it [ACTION_2] — [SUBJECT_2_DETAIL_1], [SUBJECT_2_DETAIL_2], [EFFECT_DETAIL], comic-style [FX_DESC] bursting from [IMPACT_SOURCE]. It [FINAL_CAMERA_RELATION] as the [ACTION_2_NOUN] peaks. Hold on [HOLD_TARGET].
+
+# ---------------------------------------------------------------------------
+# Filled example (the original prompt this template was extracted from):
+# ---------------------------------------------------------------------------
+#
+# Bold comic-book ink style, heavy linework, red and blue-black palette, night city.
+# Use <Picture 2> and <Picture 1> as reference frames and <Audio 1> exactly as it is.
+# CUT 1: top-down view of the little boy superhero on the rooftop — red cape
+# fluttering in the wind, hands planted on his hips, freckles and a cocky grin
+# as he looks straight up into the camera. The camera slowly descends toward
+# him as he delivers his line — as he speaks, comic-book graphic overlay text
+# word by word in sync with his voice: "GET READY TO" - "MEET" — "YOUR" —
+# "MAKER" — huge jagged comic lettering, white with heavy black outlines and
+# red drop shadows, tilted at scrappy angles, until the three words hang
+# stacked in the air above him between his face and the lens.
+# TRANSITION: a violent WHIP PAN off the rooftop that SMEARS the floating
+# words away with it, motion-streaked —
+# CUT 2: low hero angle on the colossal black mech-kaiju towering over the
+# skyline as it rears back and unleashes a GIANT terrifying ROAR — jaws wide
+# with fangs, red eyes and chest-core flaring blinding bright, blue lightning
+# arcing off its head, the roar's shockwave rippling dust and rattling windows
+# down the buildings, comic-style speed-lines and ink splatter bursting from
+# the impact of the sound. It leans INTO the camera as the roar peaks. Hold
+# on the roar.
