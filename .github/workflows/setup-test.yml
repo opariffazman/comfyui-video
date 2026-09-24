@@ -1,0 +1,101 @@
+# Runs the setup scripts on clean GitHub runners.
+# Runners have no GPU: SKIP_GPU_CHECK=1 skips the driver check, and ComfyUI boots with --cpu.
+# Models are never downloaded (43GB+). download-models.py --check only compares against the Hub.
+name: setup-test
+
+on:
+  push:
+    branches: [main]
+    paths: ["scripts/**", "extra_model_paths.yaml", ".github/workflows/setup-test.yml"]
+  workflow_dispatch:
+
+env:
+  SKIP_GPU_CHECK: "1"
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: powershell  # Windows PowerShell 5.1, the default shell on a fresh machine
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Report preinstalled tools
+        run: |
+          foreach ($c in "git", "uv", "winget", "python") {
+            $p = Get-Command $c -ErrorAction SilentlyContinue
+            Write-Host ("{0,-7} {1}" -f $c, $(if ($p) { $p.Source } else { "(missing)" }))
+          }
+
+      - name: Hide preinstalled uv so setup.ps1 must install it
+        run: |
+          $keep = $env:Path -split ";" | Where-Object {
+            $_ -and -not (Test-Path (Join-Path $_ "uv.exe"))
+          }
+          "Path=$($keep -join ';')" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: bootstrap.ps1 (clone + setup, no models)
+        run: |
+          & .\scripts\bootstrap.ps1 -Dir "$env:RUNNER_TEMP\cv" -SkipModels
+          if (-not $?) { exit 1 }
+          $head = git -C "$env:RUNNER_TEMP\cv" rev-parse HEAD
+          if ($head -ne $env:GITHUB_SHA) {
+            Write-Warning "Bootstrap cloned $head, workflow ran for $env:GITHUB_SHA (main moved on)."
+          }
+
+      - name: setup.ps1 re-run is idempotent
+        working-directory: ${{ runner.temp }}\cv
+        run: |
+          .\scripts\setup.ps1 -SkipModels
+          if (-not $?) { exit 1 }
+
+      - name: Python packages import
+        working-directory: ${{ runner.temp }}\cv
+        run: |
+          .venv\Scripts\python.exe -c "import sys, torch, triton, sageattention; print(sys.version); print('torch', torch.__version__, 'cuda', torch.version.cuda); print('triton', triton.__version__)"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      - name: download-models.py --check reaches the Hub
+        working-directory: ${{ runner.temp }}\cv
+        run: |
+          .venv\Scripts\python.exe scripts\download-models.py --check --no-r2v
+          # exit 1 = files missing (expected). Anything else is an error.
+          if ($LASTEXITCODE -ne 1) { Write-Error "expected exit 1, got $LASTEXITCODE"; exit 1 }
+          exit 0
+
+      - name: launch.py fails cleanly without a GPU
+        working-directory: ${{ runner.temp }}\cv
+        run: |
+          $out = .venv\Scripts\python.exe scripts\launch.py 2>&1 | Out-String
+          Write-Host $out
+          if ($out -notmatch "nvidia-smi failed") { Write-Error "unexpected launch.py output"; exit 1 }
+          exit 0
+
+      - name: ComfyUI boots on CPU and loads all nodes
+        working-directory: ${{ runner.temp }}\cv\comfy
+        run: |
+          ..\.venv\Scripts\python.exe main.py --cpu --quick-test-for-ci --enable-manager `
+            --extra-model-paths-config ..\extra_model_paths.yaml `
+            --user-directory ..\user --output-directory ..\outputs --input-directory ..\inputs
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: setup.sh (no models), twice for idempotency
+        run: |
+          ./scripts/setup.sh --skip-models
+          ./scripts/setup.sh --skip-models
+
+      - name: Python packages import
+        run: .venv/bin/python -c "import torch, triton, sageattention; print(torch.__version__, torch.version.cuda)"
+
+      - name: ComfyUI boots on CPU and loads all nodes
+        working-directory: comfy
+        run: |
+          ../.venv/bin/python main.py --cpu --quick-test-for-ci --enable-manager \
+            --extra-model-paths-config ../extra_model_paths.yaml \
+            --user-directory ../user --output-directory ../outputs --input-directory ../inputs

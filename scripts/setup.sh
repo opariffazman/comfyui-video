@@ -33,15 +33,21 @@ if ! command -v uv >/dev/null; then
   curl -LsSf https://astral.sh/uv/install.sh | sh
   export PATH="$HOME/.local/bin:$PATH"
 fi
-for cmd in git uv nvidia-smi; do
+for cmd in git uv; do
   command -v "$cmd" >/dev/null || { echo "Missing '$cmd'. Install it and re-run." >&2; exit 1; }
 done
-DRIVER=$(nvidia-smi --query-gpu=driver_version --format=csv,noheader | head -1)
-if [ "${DRIVER%%.*}" -lt 580 ]; then
-  echo "NVIDIA driver $DRIVER is too old. torch cu130 needs >= 580. Update the driver and re-run." >&2
-  exit 1
+# SKIP_GPU_CHECK=1 is for CI runners without a GPU. ComfyUI cannot generate without one.
+if [ "${SKIP_GPU_CHECK:-0}" = 1 ]; then
+  echo "!! SKIP_GPU_CHECK=1: skipping the NVIDIA driver check."
+else
+  command -v nvidia-smi >/dev/null || { echo "Missing 'nvidia-smi'. Install the NVIDIA driver (>= 580) and re-run." >&2; exit 1; }
+  DRIVER=$(nvidia-smi --query-gpu=driver_version --format=csv,noheader | head -1)
+  if [ "${DRIVER%%.*}" -lt 580 ]; then
+    echo "NVIDIA driver $DRIVER is too old. torch cu130 needs >= 580. Update the driver and re-run." >&2
+    exit 1
+  fi
+  echo "### GPU: $(nvidia-smi --query-gpu=name,memory.total --format=csv,noheader | head -1), driver $DRIVER"
 fi
-echo "### GPU: $(nvidia-smi --query-gpu=name,memory.total --format=csv,noheader | head -1), driver $DRIVER"
 
 echo "### ComfyUI $COMFY_TAG"
 if [ ! -d comfy/.git ]; then

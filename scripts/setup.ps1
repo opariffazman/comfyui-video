@@ -53,15 +53,20 @@ if (-not (Install-WithWinget uv astral-sh.uv)) {
     Update-SessionPath
 }
 Need uv
-if (-not (Has nvidia-smi)) {
-    throw "Missing 'nvidia-smi'. Install the NVIDIA driver (>= 580) and re-run."
+# SKIP_GPU_CHECK=1 is for CI runners without a GPU. ComfyUI cannot generate without one.
+if ($env:SKIP_GPU_CHECK -eq "1") {
+    Write-Warning "SKIP_GPU_CHECK=1: skipping the NVIDIA driver check."
+} else {
+    if (-not (Has nvidia-smi)) {
+        throw "Missing 'nvidia-smi'. Install the NVIDIA driver (>= 580) and re-run."
+    }
+    $Driver = (nvidia-smi --query-gpu=driver_version --format=csv,noheader | Select-Object -First 1).Trim()
+    if ([int]($Driver.Split(".")[0]) -lt 580) {
+        throw "NVIDIA driver $Driver is too old. torch cu130 needs >= 580. Update the driver and re-run."
+    }
+    $Gpu = (nvidia-smi --query-gpu=name,memory.total --format=csv,noheader | Select-Object -First 1).Trim()
+    Write-Host "### GPU: $Gpu, driver $Driver"
 }
-$Driver = (nvidia-smi --query-gpu=driver_version --format=csv,noheader | Select-Object -First 1).Trim()
-if ([int]($Driver.Split(".")[0]) -lt 580) {
-    throw "NVIDIA driver $Driver is too old. torch cu130 needs >= 580. Update the driver and re-run."
-}
-$Gpu = (nvidia-smi --query-gpu=name,memory.total --format=csv,noheader | Select-Object -First 1).Trim()
-Write-Host "### GPU: $Gpu, driver $Driver"
 
 Write-Host "### ComfyUI $ComfyTag"
 if (-not (Test-Path "comfy\.git")) {
